@@ -1,17 +1,13 @@
 import java.sql.*;
 import java.util.Scanner;
-
 public class Bankmanagement{
-
     // Database Configuration
     private static final String URL = "jdbc:mysql://localhost:3306/Banking_Management";
     private static final String USER = "root";
     private static final String PASS = "Saigeetha12@34";
-
     public static void main(String[] args) {
         // Step 1: Initialize Database and Tables
         setupDatabaseAndTables();
-
         // Step 2: Main Menu Loop
         Scanner scanner = new Scanner(System.in);
         while (true) {
@@ -25,10 +21,8 @@ public class Bankmanagement{
             System.out.println("5. View Transaction History");
             System.out.println("6. Exit");
             System.out.print("Select an option (1-6): ");
-
             int choice = scanner.nextInt();
             scanner.nextLine(); // Consume newline
-
             switch (choice) {
                 case 1:
                     System.out.print("Enter Customer Name: ");
@@ -48,7 +42,6 @@ public class Bankmanagement{
                     double depAmt = scanner.nextDouble();
                     performDepositOrWithdrawal(depAcc, depAmt, "DEPOSIT");
                     break;
-
                 case 3:
                     System.out.print("Enter Account Number: ");
                     int withAcc = scanner.nextInt();
@@ -56,7 +49,6 @@ public class Bankmanagement{
                     double withAmt = scanner.nextDouble();
                     performDepositOrWithdrawal(withAcc, withAmt, "WITHDRAWAL");
                     break;
-
                 case 4:
                     System.out.print("Enter Sender Account Number: ");
                     int sender = scanner.nextInt();
@@ -66,18 +58,15 @@ public class Bankmanagement{
                     double transferAmt = scanner.nextDouble();
                     transferFunds(sender, receiver, transferAmt);
                     break;
-
                 case 5:
                     System.out.print("Enter Account Number: ");
                     int historyAcc = scanner.nextInt();
                     printTransactionHistory(historyAcc);
                     break;
-
                 case 6:
                     System.out.println("Thank you for using Banking Management System. Goodbye!");
                     scanner.close();
                     System.exit(0);
-
                 default:
                     System.out.println("Invalid option! Please try again.");
             }
@@ -85,7 +74,6 @@ public class Bankmanagement{
     }
     // 1. DATABASE & TABLES SETUP (JDBC)
     private static void setupDatabaseAndTables() {
-
         String createCustomerTable = """
 CREATE TABLE IF NOT EXISTS customer (
     customer_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -94,7 +82,6 @@ CREATE TABLE IF NOT EXISTS customer (
     phone VARCHAR(15) NOT NULL
 )
 """;
-
         String createAccountTable = """
 CREATE TABLE IF NOT EXISTS accounts (
     account_number INT PRIMARY KEY AUTO_INCREMENT,
@@ -105,7 +92,6 @@ CREATE TABLE IF NOT EXISTS accounts (
     FOREIGN KEY (customer_id) REFERENCES customer(customer_id)
 )
 """;
-
         String createTransactionTable = """
 CREATE TABLE IF NOT EXISTS transactions (
     transaction_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -116,21 +102,17 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (account_number) REFERENCES accounts(account_number)
 )
 """;
-
         try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
              Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(createCustomerTable);
             stmt.executeUpdate(createAccountTable);
             stmt.executeUpdate(createTransactionTable);
-
-
             System.out.println("Database and tables initialized successfully.");
 
         } catch (SQLException e) {
             System.err.println("Initialization Error: " + e.getMessage());
         }
     }
-
     private static Connection getDBConnection() throws SQLException {
         return DriverManager.getConnection(URL , USER, PASS);
     }
@@ -138,23 +120,19 @@ CREATE TABLE IF NOT EXISTS transactions (
     public static void createAccount(String name, String email, String phone, double initialDeposit) {
         String insertCustomer = "INSERT INTO customer (name, email, phone) VALUES (?, ?, ?)";
         String insertAccount = "INSERT INTO accounts (customer_id, balance) VALUES (?, ?)";
-
         try (Connection conn = getDBConnection()) {
             conn.setAutoCommit(false); // Begin Transaction
-
             int customerId = -1;
             try (PreparedStatement stmt = conn.prepareStatement(insertCustomer, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setString(1, name);
                 stmt.setString(2, email);
                 stmt.setString(3, phone);
                 stmt.executeUpdate();
-
                 ResultSet rs = stmt.getGeneratedKeys();
                 if (rs.next()) {
                     customerId = rs.getInt(1);
                 }
             }
-
             int accountNumber = -1;
             try (PreparedStatement stmt = conn.prepareStatement(insertAccount, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setInt(1, customerId);
@@ -166,7 +144,6 @@ CREATE TABLE IF NOT EXISTS transactions (
                     accountNumber = rs.getInt(1);
                 }
             }
-
             conn.commit(); // Commit Transaction
             System.out.println("Account Created Successfully!");
             System.out.println("Assigned Account Number: " + accountNumber);
@@ -181,16 +158,13 @@ CREATE TABLE IF NOT EXISTS transactions (
             System.out.println("Amount must be greater than 0.");
             return;
         }
-
         String checkBalanceSql = "SELECT balance FROM accounts WHERE account_number = ?";
         String updateSql = type.equalsIgnoreCase("DEPOSIT")
                 ? "UPDATE accounts SET balance = balance + ? WHERE account_number = ?"
                 : "UPDATE accounts SET balance = balance - ? WHERE account_number = ?";
         String logSql = "INSERT INTO transactions (account_number, transaction_type, amount) VALUES (?, ?, ?)";
-
         try (Connection conn = getDBConnection()) {
             conn.setAutoCommit(false);
-
             // Validation for withdrawal
             if (type.equalsIgnoreCase("WITHDRAWAL")) {
                 try (PreparedStatement checkStmt = conn.prepareStatement(checkBalanceSql)) {
@@ -206,7 +180,6 @@ CREATE TABLE IF NOT EXISTS transactions (
                     }
                 }
             }
-
             // Execute Balance Update
             try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
                 updateStmt.setDouble(1, amount);
@@ -217,7 +190,6 @@ CREATE TABLE IF NOT EXISTS transactions (
                     return;
                 }
             }
-
             // Log Transaction History
             try (PreparedStatement logStmt = conn.prepareStatement(logSql)) {
                 logStmt.setInt(1, accNum);
@@ -225,7 +197,6 @@ CREATE TABLE IF NOT EXISTS transactions (
                 logStmt.setDouble(3, amount);
                 logStmt.executeUpdate();
             }
-
             conn.commit();
             System.out.println(type + " of $" + amount + " successfully processed!");
 
@@ -239,20 +210,15 @@ CREATE TABLE IF NOT EXISTS transactions (
             System.out.println("Transfer amount must be greater than 0.");
             return;
         }
-
         String checkBalanceSql = "SELECT balance FROM accounts WHERE account_number = ?";
         String deductSql = "UPDATE accounts SET balance = balance - ? WHERE account_number = ?";
         String addSql = "UPDATE accounts SET balance = balance + ? WHERE account_number = ?";
         String logSql = "INSERT INTO transactions (account_number, transaction_type, amount) VALUES (?, ?, ?)";
-
         Connection conn = null;
-
         try {
             conn = getDBConnection();
-
             // Step A: Disable Auto-Commit to manually manage transaction boundaries
             conn.setAutoCommit(false);
-
             // Step B: Validate Sender Existence and Balance
             try (PreparedStatement checkStmt = conn.prepareStatement(checkBalanceSql)) {
                 checkStmt.setInt(1, senderAcc);
@@ -264,7 +230,6 @@ CREATE TABLE IF NOT EXISTS transactions (
                     throw new SQLException("Insufficient funds in sender account.");
                 }
             }
-
             // Step C: Validate Receiver Existence
             try (PreparedStatement checkStmt = conn.prepareStatement(checkBalanceSql)) {
                 checkStmt.setInt(1, receiverAcc);
@@ -273,21 +238,18 @@ CREATE TABLE IF NOT EXISTS transactions (
                     throw new SQLException("Receiver account #" + receiverAcc + " not found.");
                 }
             }
-
             // Step D: Deduct from Sender
             try (PreparedStatement deductStmt = conn.prepareStatement(deductSql)) {
                 deductStmt.setDouble(1, amount);
                 deductStmt.setInt(2, senderAcc);
                 deductStmt.executeUpdate();
             }
-
             // Step E: Add to Receiver
             try (PreparedStatement addStmt = conn.prepareStatement(addSql)) {
                 addStmt.setDouble(1, amount);
                 addStmt.setInt(2, receiverAcc);
                 addStmt.executeUpdate();
             }
-
             // Step F: Log 'TRANSFER_OUT' for Sender
             try (PreparedStatement logStmt = conn.prepareStatement(logSql)) {
                 logStmt.setInt(1, senderAcc);
@@ -295,7 +257,6 @@ CREATE TABLE IF NOT EXISTS transactions (
                 logStmt.setDouble(3, amount);
                 logStmt.executeUpdate();
             }
-
             // Step G: Log 'TRANSFER_IN' for Receiver
             try (PreparedStatement logStmt = conn.prepareStatement(logSql)) {
                 logStmt.setInt(1, receiverAcc);
@@ -303,11 +264,9 @@ CREATE TABLE IF NOT EXISTS transactions (
                 logStmt.setDouble(3, amount);
                 logStmt.executeUpdate();
             }
-
             // Step H: Commit transfer ONLY if every step succeeded
             conn.commit();
             System.out.println("Successfully transferred $" + amount + " from Account #" + senderAcc + " to Account #" + receiverAcc);
-
         } catch (SQLException e) {
             System.err.println("\n[TRANSFER FAILED]: " + e.getMessage());
 
@@ -335,17 +294,13 @@ CREATE TABLE IF NOT EXISTS transactions (
     // 5. TRANSACTION HISTORY MODULE
     public static void printTransactionHistory(int accountNum) {
         String sql = "SELECT * FROM transactions WHERE account_number = ? ORDER BY timestamp DESC";
-
         try (Connection conn = getDBConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setInt(1, accountNum);
             ResultSet rs = stmt.executeQuery();
-
             System.out.println("\n------------------------------------------------------------");
             System.out.println("        TRANSACTION HISTORY FOR ACCOUNT #" + accountNum);
             System.out.println("------------------------------------------------------------");
-
             boolean hasTransactions = false;
             while (rs.next()) {
                 hasTransactions = true;
@@ -355,12 +310,10 @@ CREATE TABLE IF NOT EXISTS transactions (
                         rs.getDouble("amount"),
                         rs.getTimestamp("timestamp"));
             }
-
             if (!hasTransactions) {
                 System.out.println("No records found for this account.");
             }
             System.out.println("------------------------------------------------------------");
-
         } catch (SQLException e) {
             System.err.println("Error fetching transaction history: " + e.getMessage());
         }
