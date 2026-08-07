@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS transactions (
                     accountNumber = rs.getInt(1);
                 }
             }
-            conn.commit(); // Commit Transaction
+            conn.commit();
             System.out.println("Account Created Successfully!");
             System.out.println("Assigned Account Number: " + accountNumber);
 
